@@ -11,3 +11,52 @@ if [[ -s "${ZDOTDIR:-$HOME}/.zprezto/init.zsh" ]]; then
 fi
 
 # Customize to your needs...
+
+# Reminder this is in a public repo!
+
+export ZLE_REMOVE_SUFFIX_CHARS=$' \t\n;&|'
+export ZLE_SPACE_SUFFIX_CHARS=$'&|'
+
+bindkey "^[[5~" history-beginning-search-backward
+bindkey "^[[6~" history-beginning-search-forward
+
+if [[ -f /etc/ad-release ]]; then
+  # running on airserver device
+
+  # TODO: use on device helpers
+  # TODO: add helpers to finish setup
+  # TODO: add helpers to check/switch update channel
+
+  function airserver_read_config() {
+    local SECTION="$1"
+    local KEY="$2"
+    sed -rn '/^\[/{h;d};G;s/^'"$KEY"'=(.*)\n\['"$SECTION"'\]$/\1/p' /media/data/airserver/.config/App\ Dynamic/AirServer.conf 2>/dev/null
+  }
+
+  function airserver_read_dbus() {(
+    set -o pipefail
+    local SECTION="$1"
+    local KEY="$2"
+    busctl get-property --json=short com.appdynamic.AirServer /config/raw/${SECTION} com.appdynamic.Properties.${SECTION} ${KEY} 2>/dev/null | jq --raw-output .data
+  )}
+
+  function airserver_write_dbus_string() {
+    local SECTION="$1"
+    local KEY="$2"
+    local STRING="$3"
+    busctl set-property com.appdynamic.AirServer /config/raw/${SECTION} com.appdynamic.Properties.${SECTION} ${KEY} s "${STRING}"
+  }
+
+  function airserver_get_name() {
+    airserver_read_dbus 'Device' 'name' || airserver_read_config 'Device' 'name'
+  }
+
+  function airserver_set_name() {
+    airserver_write_dbus_string 'Device' 'name' "$*"
+  }
+
+  RPROMPT="\$(airserver_get_name)"
+
+  alias airserver-shell='su -l airserver'
+
+fi
