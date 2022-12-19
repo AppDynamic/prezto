@@ -15,14 +15,14 @@ cleanup() {
 
 trap cleanup EXIT
 
-TMP_TAR_FILE="${TMP_DIR}/presto.tar"
+TMP_TAR_FILE="${TMP_DIR}/prezto.tar"
 TMP_TAR_GZ_FILE="${TMP_TAR_FILE}.gz"
 
 echo "Archiving current head into ${TMP_TAR_FILE}"
-git archive --prefix "presto/" --output="${TMP_TAR_FILE}" HEAD
+git archive --prefix "prezto/" --output="${TMP_TAR_FILE}" HEAD
 git submodule foreach --recursive --quiet \
 	"echo \"Archiving appending submodule \$path -> \$sha1.tar -> ${TMP_TAR_FILE}\" && \
-	git archive --prefix=presto/\$path/ --output=\"${TMP_DIR}/\$sha1.tar\" HEAD && \
+	git archive --prefix=prezto/\$path/ --output=\"${TMP_DIR}/\$sha1.tar\" HEAD && \
 	tar --concatenate --file=\"${TMP_TAR_FILE}\" \"${TMP_DIR}/\$sha1.tar\""
 
 echo
@@ -46,5 +46,5 @@ function upload() {
 	rsync --archive --info=progress2 "${SRC}" "${DEST}"
 }
 
-upload "root@staging.turninn.appdynamic.com:/var/www/html/presto/presto.tar.gz"
-upload "root@download.airserver.com:/var/www/download.airserver.com/presto/presto.tar.gz"
+upload "root@staging.turninn.appdynamic.com:/var/www/html/prezto/prezto.tar.gz"
+upload "root@download.airserver.com:/var/www/download.airserver.com/prezto/prezto.tar.gz"
