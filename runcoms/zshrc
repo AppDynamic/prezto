@@ -58,5 +58,6 @@ if [[ -f /etc/ad-release ]]; then
   RPROMPT="\$(airserver_get_name)"
 
   alias airserver-shell='su -l airserver'
+  alias update_prezto="zsh /root/.zprezto-manager update && source .zshrc"
 
 fi
