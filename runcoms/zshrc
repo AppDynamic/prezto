@@ -22,6 +22,7 @@ bindkey "^[[6~" history-beginning-search-forward
 
 if [[ -f /etc/ad-release ]]; then
   # running on airserver device
+  source /etc/ad-release
 
   # TODO: use on device helpers
   # TODO: add helpers to finish setup
@@ -55,7 +56,7 @@ if [[ -f /etc/ad-release ]]; then
     airserver_write_dbus_string 'Device' 'name' "$*"
   }
 
-  RPROMPT="\$(airserver_get_name)"
+  RPROMPT='%B%F{#4287f5}$(airserver_get_name)%F{reset} : %F{#c79f1c}$AIRSERVER_VERSION'
 
   alias airserver-shell='su -l airserver'
   alias update_prezto="zsh /root/.zprezto-manager update && source .zshrc"
