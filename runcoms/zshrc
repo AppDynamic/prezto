@@ -56,7 +56,24 @@ if [[ -f /etc/ad-release ]]; then
     airserver_write_dbus_string 'Device' 'name' "$*"
   }
 
-  RPROMPT='%B%F{#4287f5}$(airserver_get_name)%F{reset} : %F{#c79f1c}$AIRSERVER_VERSION'
+  function airserver_build_info() {
+    # check if dirty build
+    local DIRTY=
+    if [[ "$GIT_SHA" == *-dirty ]]; then
+      DIRTY=" %F{196}dirty"
+    fi
+
+    # check if new build less than 12 hour old then time is more useful than the git sha
+    local NOW=$(date +%s)
+    if ((($NOW - $BUILD_DATE) < 12*60*60)); then
+      local BUILD_TIME=$(date --date="@${BUILD_DATE}" '+%k:%M:%S')
+      echo "%F{#c79f1c}$AIRSERVER_VERSION %F{#1cc7c1}$BUILD_TIME$DIRTY"
+    else
+      echo "%F{#c79f1c}$AIRSERVER_VERSION%F{reset} : %F{#bc1bc2}${GIT_SHA:s/-dirty//}$DIRTY"
+    fi
+  }
+
+  RPROMPT='%B%F{#4287f5}$(airserver_get_name)%F{reset} : $(airserver_build_info)'
 
   alias airserver-shell='su -l airserver'
   alias update_prezto="zsh /root/.zprezto-manager update && source .zshrc"
