@@ -78,4 +78,5 @@ if [[ -f /etc/ad-release ]]; then
   alias airserver-shell='su -l airserver'
   alias update_prezto="zsh /root/.zprezto-manager update && source .zshrc"
 
+  path+=(/usr/share/ad/tools)
 fi
