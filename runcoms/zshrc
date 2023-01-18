@@ -41,6 +41,14 @@ if [[ -f /etc/ad-release ]]; then
     busctl get-property --json=short com.appdynamic.AirServer /config/raw/${SECTION} com.appdynamic.Properties.${SECTION} ${KEY} 2>/dev/null | jq --raw-output .data
   )}
 
+  # for older devices
+  if ! type jq > /dev/null; then
+     echo "jq missing disabling airserver_read_dbus"
+     function airserver_read_dbus() {(
+       exit 1 # jq not available
+     )}
+  fi
+
   function airserver_write_dbus_string() {
     local SECTION="$1"
     local KEY="$2"
