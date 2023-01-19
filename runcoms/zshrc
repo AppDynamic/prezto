@@ -88,3 +88,6 @@ if [[ -f /etc/ad-release ]]; then
 
   path+=(/usr/share/ad/tools)
 fi
+
+# disable annoying systemd pager
+export SYSTEMD_PAGER=
