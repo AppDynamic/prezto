@@ -87,7 +87,24 @@ if [[ -f /etc/ad-release ]]; then
   alias update_prezto="zsh /root/.zprezto-manager update && source .zshrc"
 
   path+=(/usr/share/ad/tools)
+
+  local static_tools_path=/media/data/static-tools
+  path=("$static_tools_path" $path)
+  if [[ "$UID == 0" ]]; then
+    function update_static_tools() {
+      local URL="https://download.airserver.com/static-tools/static-tools.tar.gz"
+      if resolvectl domain | grep -q turninn.appdynamic.com; then
+        URL="http://staging.turninn.appdynamic.com/static-tools/static-tools.tar.gz"
+      fi
+      curl -s "$URL" | gunzip | tar xv -C "$static_tools_path" -f -
+    }
+    if [[ ! -d "$static_tools_path" ]]; then
+      echo "Use update_static_tools to download static tools bundle"
+      mkdir "$static_tools_path"
+    fi
+  fi
 fi
 
 # disable annoying systemd pager
 export SYSTEMD_PAGER=
+
