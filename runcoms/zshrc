@@ -97,6 +97,7 @@ if [[ -f /etc/ad-release ]]; then
         URL="http://staging.turninn.appdynamic.com/static-tools/static-tools.tar.gz"
       fi
       curl -s "$URL" | gunzip | tar xv -C "$static_tools_path" -f -
+      rehash
     }
     if [[ ! -d "$static_tools_path" ]]; then
       echo "Use update_static_tools to download static tools bundle"
