@@ -104,6 +104,13 @@ if [[ -f /etc/ad-release ]]; then
       mkdir "$static_tools_path"
     fi
   fi
+
+  # fixup for old builds with broken .zprezto-manager
+  if [[ -L "$HOME/prezto" ]]; then
+    echo "Fixing bad prezto symlink..."
+    rm -rf "$HOME/.zprezto"
+    mv "$HOME/prezto" "$HOME/.zprezto"
+  fi
 fi
 
 # disable annoying systemd pager
