@@ -64,7 +64,7 @@ if [[ -f /etc/ad-release ]]; then
     fi
     echo "Starting updater"
     # TODO: add option to force kexec updates?
-    time systemctl start updater
+    time systemctl start updater-manual
     if confutil --file /run/updater_status.ini --read updateReadyRebootPending | grep -q '=true'; then
       echo "Updating finshed - New update applied - Rebooting..."
       # try kexec with reboot as fallback
