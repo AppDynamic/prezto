@@ -26,7 +26,53 @@ if [[ -f /etc/ad-release ]]; then
 
   # TODO: use on device helpers
   # TODO: add helpers to finish setup
-  # TODO: add helpers to check/switch update channel
+
+  function api_call() {(
+    set -o err_return
+    set -o no_unset
+    set -o pipefail
+    op="$1" # required
+    arg="${2:-}" # optional
+    url="https://api.airserver.com/device/${op}/$(cat /sys/class/dmi/id/product_uuid)/${arg}"
+    # TODO: improve error feedback, maybe precheck if on sanctioned network
+    curl --fail-with-body --silent "$url" | jq '.[]'
+  )}
+
+  function update_set_channel() {(
+    set -o no_unset
+    api_call setChannel "$1"
+  )}
+
+  function update_get_channel() {(
+    api_call getChannel
+  )}
+
+  function update_root_image() {(
+    set -o err_return
+    set -o no_unset
+    set -o pipefail
+    channel_id="${1:-}" # optional
+    if [[ $channel_id ]]; then
+      # ensure on given channel
+      current_channel="$(update_get_channel)"
+      if [[ "$channel_id" == "$current_channel" ]]; then
+        echo "Already on channel $channel_id"
+      else
+        echo -n "Switching from channel $current_channel to $channel_id... "
+        update_set_channel "$channel_id"
+      fi
+    fi
+    echo "Starting updater"
+    # TODO: add option to force kexec updates?
+    time systemctl start updater
+    if confutil --file /run/updater_status.ini --read updateReadyRebootPending | grep -q '=true'; then
+      echo "Updating finshed - New update applied - Rebooting..."
+      # try kexec with reboot as fallback
+      systemctl kexec 2> >(grep -v '^Boot entry does not') || systemctl reboot
+    else
+      echo "Updating finshed - Already up-to-date"
+    fi
+  )}
 
   function airserver_read_config() {
     local SECTION="$1"
