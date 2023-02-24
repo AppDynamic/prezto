@@ -112,6 +112,10 @@ if [[ -f /etc/ad-release ]]; then
     airserver_write_dbus_string 'Device' 'name' "$*"
   }
 
+  function model_name() {
+    cat /sys/class/dmi/id/product_name
+  }
+
   function airserver_build_info() {
     # check if dirty build
     local DIRTY=
@@ -129,7 +133,7 @@ if [[ -f /etc/ad-release ]]; then
     fi
   }
 
-  RPROMPT='%B%F{#4287f5}$(airserver_get_name)%F{reset} : $(airserver_build_info)'
+  RPROMPT='%B%F{#4287f5}$(airserver_get_name)%F{reset} : $(model_name) : $(airserver_build_info)'
 
   alias airserver-shell='su -l airserver'
   alias update_prezto="zsh /root/.zprezto-manager update && source .zshrc"
