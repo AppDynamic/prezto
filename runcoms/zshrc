@@ -24,8 +24,6 @@ if [[ -f /etc/ad-release ]]; then
   # running on airserver device
   source /etc/ad-release
 
-  uptime
-
   # TODO: use on device helpers
   # TODO: add helpers to finish setup
 
