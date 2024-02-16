@@ -134,7 +134,7 @@ if [[ -f /etc/ad-release ]]; then
   RPROMPT='%B%F{#4287f5}$(airserver_get_name)%F{reset} : $(model_name) : $(airserver_build_info)'
 
   alias airserver-shell='su -l airserver'
-  alias update_prezto="zsh /root/.zprezto-manager update && source .zshrc"
+  alias update_prezto="zsh /root/.zprezto-manager update && exec zsh"
 
   path+=(/usr/share/ad/tools)
 
