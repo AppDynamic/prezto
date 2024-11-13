@@ -27,7 +27,19 @@ if [[ -f /etc/ad-release ]]; then
   # TODO: use on device helpers
   # TODO: add helpers to finish setup
 
-  function api_call() {(
+  function feedback-scope() {
+    feedback --clear-progress --main-title "" --sub-title ""
+    systemd-run \
+      --setenv="XDG_RUNTIME_DIR=/run/user/$(id --user airserver)" \
+      --setenv="XDG_SESSION_TYPE=wayland" --setenv="WAYLAND_DISPLAY=wayland-1" \
+      --quiet --unit="ad-hoc-feedback" feedback
+
+    trap "systemctl stop ad-hoc-feedback" EXIT
+
+    "$@"
+  }
+
+  function api-call() {(
     set -o err_return
     set -o no_unset
     set -o pipefail
@@ -38,32 +50,36 @@ if [[ -f /etc/ad-release ]]; then
     curl --fail-with-body --silent "$url" | jq '.[]'
   )}
 
-  function update_set_channel() {(
+  function update-set-channel() {(
     set -o no_unset
-    api_call setChannel "$1"
+    api-call setChannel "$1"
   )}
 
-  function update_get_channel() {(
-    api_call getChannel
+  function update-get-channel() {(
+    api-call getChannel
   )}
 
-  function update_root_image() {(
+  function _update-root-image() {(
     set -o err_return
     set -o no_unset
     set -o pipefail
     channel_id="${1:-}" # optional
     if [[ $channel_id ]]; then
       # ensure on given channel
-      current_channel="$(update_get_channel)"
+      feedback --main-title "Getting current channel"
+      current_channel="$(update-get-channel)"
       if [[ "$channel_id" == "$current_channel" ]]; then
+        feedback --main-title "Already on channel $channel_id"
         echo "Already on channel $channel_id"
       else
+        feedback --main-title "Switching from channel $current_channel to $channel_id... "
         echo -n "Switching from channel $current_channel to $channel_id... "
-        update_set_channel "$channel_id"
+        update-set-channel "$channel_id"
       fi
     fi
     echo "Starting updater"
     # TODO: add option to force kexec updates?
+    trap "systemctl stop updater-manual" INT
     time systemctl start updater-manual
     if confutil --file /run/updater_status.ini --read updateReadyRebootPending | grep -q '=true'; then
       echo "Updating finshed - New update applied - Rebooting..."
@@ -74,13 +90,13 @@ if [[ -f /etc/ad-release ]]; then
     fi
   )}
 
-  function airserver_read_config() {
+  function _airserver_read_config() {
     local SECTION="$1"
     local KEY="$2"
     sed -rn '/^\[/{h;d};G;s/^'"$KEY"'=(.*)\n\['"$SECTION"'\]$/\1/p' /media/data/airserver/.config/App\ Dynamic/AirServer.conf 2>/dev/null
   }
 
-  function airserver_read_dbus() {(
+  function _airserver_read_dbus() {(
     set -o pipefail
     local SECTION="$1"
     local KEY="$2"
@@ -89,32 +105,28 @@ if [[ -f /etc/ad-release ]]; then
 
   # for older devices
   if ! type jq > /dev/null; then
-     echo "jq missing disabling airserver_read_dbus"
-     function airserver_read_dbus() {(
+     echo "jq missing disabling _airserver_read_dbus"
+     function _airserver_read_dbus() {(
        exit 1 # jq not available
      )}
   fi
 
-  function airserver_write_dbus_string() {
+  function _airserver_write_dbus_string() {
     local SECTION="$1"
     local KEY="$2"
     local STRING="$3"
     busctl set-property com.appdynamic.AirServer /config/raw/${SECTION} com.appdynamic.Properties.${SECTION} ${KEY} s "${STRING}"
   }
 
-  function airserver_get_name() {
-    airserver_read_dbus 'Device' 'name' || airserver_read_config 'Device' 'name'
+  function airserver-get-name() {
+    _airserver_read_dbus 'Device' 'name' || _airserver_read_config 'Device' 'name'
   }
 
-  function airserver_set_name() {
-    airserver_write_dbus_string 'Device' 'name' "$*"
+  function airserver-set-name() {
+    _airserver_write_dbus_string 'Device' 'name' "$*"
   }
 
-  function model_name() {
-    cat /sys/class/dmi/id/product_name
-  }
-
-  function airserver_build_info() {
+  function airserver-build-info() {
     # check if dirty build
     local DIRTY=
     if [[ "$GIT_SHA" == *-dirty ]]; then
@@ -131,17 +143,18 @@ if [[ -f /etc/ad-release ]]; then
     fi
   }
 
-  RPROMPT='%B%F{#4287f5}$(airserver_get_name)%F{reset} : $(model_name) : $(airserver_build_info)'
+  PROMPT_MODEL=$(cat /sys/class/dmi/id/product_name)
+  RPROMPT='%B%F{#4287f5}$(airserver-get-name)%F{reset} : $PROMPT_MODEL : $(airserver-build-info)'
 
   alias airserver-shell='su -l airserver'
-  alias update_prezto="zsh /root/.zprezto-manager update && exec zsh"
+  alias update-prezto="zsh /root/.zprezto-manager update && exec zsh"
 
   path+=(/usr/share/ad/tools)
 
   local static_tools_path=/media/data/static-tools
   path=("$static_tools_path" $path)
   if [[ "$UID == 0" ]]; then
-    function update_static_tools() {
+    function update-static-tools() {
       local URL="https://download.airserver.com/static-tools/static-tools.tar.gz"
       if resolvectl domain | grep -q turninn.appdynamic.com; then
         URL="http://staging.turninn.appdynamic.com/static-tools/static-tools.tar.gz"
@@ -153,6 +166,9 @@ if [[ -f /etc/ad-release ]]; then
       echo "Use update_static_tools to download static tools bundle"
       mkdir "$static_tools_path"
     fi
+    function update-root-image() {
+      feedback-scope _update-root-image "$@"
+    }
   fi
 
   # fixup for old builds with broken .zprezto-manager
