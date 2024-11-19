@@ -52,7 +52,7 @@ if [[ -f /etc/ad-release ]]; then
     arg="${2:-}" # optional
     url="https://api.airserver.com/device/${op}/$(cat /sys/class/dmi/id/product_uuid)/${arg}"
     # TODO: improve error feedback, maybe precheck if on sanctioned network
-    curl --fail-with-body --silent "$url" | jq '.[]'
+    curl --fail-with-body --silent "$url" | jq -c '.[]'
   )}
 
   function update-set-channel() {(
@@ -64,6 +64,22 @@ if [[ -f /etc/ad-release ]]; then
     api-call getChannel
   )}
 
+  function _update-channel-list() {
+    if [[ ${(t)_id_to_desc} != "association" ]]; then
+      typeset -g -A _id_to_desc
+      api-call listChannels | while read line; do
+        local id=$(echo "$line" | jq .id)
+        local desc=$(echo "$line" | jq -r .description)
+        _id_to_desc[$id]="$desc"
+      done
+    fi
+  }
+
+  function update-id-to-desc() {
+    _update-channel-list
+    echo $_id_to_desc[$1]
+  }
+
   function _update-root-image() {(
     set -o err_return
     set -o no_unset
@@ -74,11 +90,12 @@ if [[ -f /etc/ad-release ]]; then
       feedback --main-title "Getting current channel"
       current_channel="$(update-get-channel)"
       if [[ "$channel_id" == "$current_channel" ]]; then
-        feedback --main-title "Already on channel $channel_id"
-        echo "Already on channel $channel_id"
+        feedback --main-title "Already on channel $channel_id" --sub-title "$(update-id-to-desc $channel_id)"
+        echo "Already on channel $channel_id ($(update-id-to-desc $channel_id))"
       else
-        feedback --main-title "Switching from channel $current_channel to $channel_id... "
-        echo -n "Switching from channel $current_channel to $channel_id... "
+        feedback --main-title "Switching from channel $current_channel to $channel_id... " \
+          --sub-title "$(printf "$current_channel: $(update-id-to-desc $current_channel)\\n$channel_id: $(update-id-to-desc $channel_id)")"
+        echo -n "Switching from channel $current_channel ($(update-id-to-desc $current_channel)) to $channel_id ($(update-id-to-desc $channel_id))... "
         update-set-channel "$channel_id"
       fi
     fi
@@ -172,6 +189,9 @@ if [[ -f /etc/ad-release ]]; then
       mkdir "$static_tools_path"
     fi
     function update-root-image() {
+      if [[ -v 1 ]]; then
+        _update-channel-list
+      fi
       feedback-scope _update-root-image "$@"
     }
   fi
