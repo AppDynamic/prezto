@@ -65,12 +65,15 @@ if [[ -f /etc/ad-release ]]; then
   )}
 
   function _update-channel-list() {
-    if [[ ${(t)_id_to_desc} != "association" ]]; then
+    if [[ ${(t)_id_to_url} != "association" ]]; then
       typeset -g -A _id_to_desc
+      typeset -g -A _id_to_url
       api-call listChannels | while read line; do
         local id=$(echo "$line" | jq .id)
         local desc=$(echo "$line" | jq -r .description)
+        local url=$(echo "$line" | jq -r .url)
         _id_to_desc[$id]="$desc"
+        _id_to_url[$id]="$url"
       done
     fi
   }
@@ -78,6 +81,18 @@ if [[ -f /etc/ad-release ]]; then
   function update-id-to-desc() {
     _update-channel-list
     echo $_id_to_desc[$1]
+  }
+
+  function update-id-to-url() {
+    _update-channel-list
+    echo $_id_to_url[$1]
+  }
+
+  function update-list-channels() {
+    _update-channel-list
+    echo ${(k)_id_to_desc} | tr ' ' '\n' | sort -n | \
+     while read -n id ; do echo "$id;$_id_to_desc[$id];$_id_to_url[$id]"; done | \
+      column -N 'ID,Description,URL' -t -s ";"
   }
 
   function _update-root-image() {(
