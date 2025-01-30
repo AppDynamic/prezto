@@ -180,7 +180,7 @@ if [[ -f /etc/ad-release ]]; then
     fi
   }
 
-  PROMPT_MODEL=$(cat /sys/class/dmi/id/product_name)
+  PROMPT_MODEL=$(cat /sys/class/dmi/id/board_name)
   RPROMPT='%B%F{#4287f5}$(airserver-get-name)%F{reset} : $PROMPT_MODEL : $(airserver-build-info)'
 
   alias airserver-shell='su -l airserver'
