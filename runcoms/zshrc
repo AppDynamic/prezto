@@ -31,7 +31,7 @@ if [[ -f /etc/ad-release ]]; then
     systemctl stop ad-hoc-feedback 2> /dev/null
   }
 
-  function feedback-scope() {
+  function feedback-scope() {(
     feedback --clear-progress --main-title "" --sub-title ""
     stop-feedback
     systemd-run \
@@ -42,7 +42,7 @@ if [[ -f /etc/ad-release ]]; then
     trap "stop-feedback" EXIT INT
 
     "$@"
-  }
+  )}
 
   function api-call() {(
     set -o err_return
